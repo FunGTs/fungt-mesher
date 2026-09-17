@@ -1,0 +1,60 @@
+#if !defined(_SYCL_HANDLER_H_)
+#define _SYCL_HANDLER_H_
+#include <sycl/sycl.hpp>
+
+// SYCL must be included before GLX because X11 defines the None macro.
+#include <CL/cl.h>
+#include <CL/cl_gl.h>
+#include <CL/cl_gl_ext.h>
+#include <GL/glx.h>
+
+#include <algorithm>
+#include <funlib/Tensor/tensor.hpp>
+#include <map>
+#include <string>
+namespace flib {
+enum class device { GPU, CPU };
+enum class vendor { INTEL, NVIDIA };
+enum class backend { OPENCL, LEVEL_ZERO, CUDA };
+
+class sycl_handler {
+
+  static sycl::device _device;
+  static sycl::queue _queue;
+  static sycl::platform _platform;
+  static cl_context _clCtx;
+  static sycl::context _syclCtx;
+  static std::map<std::string, sycl::queue> _queues;
+  static sycl::info::device_type
+  device_type_from_string(const std::string &type_str);
+
+protected:
+public:
+  template <typename T, typename Func> friend class ParticleSystem;
+
+  friend class tensor_operations;
+
+  static void select_device(std::string device_name,
+                            std::string device_type = "",
+                            bool profiling = false);
+  static void get_device_info(const std::string &name = "");
+  static void sys_info();
+  static void get_platform_info();
+  static void select_backend_device(const std::string &platform_filter,
+                                    const std::string &device_type_filter);
+  static void create_gl_interop_context(const std::string &name);
+  static bool is_rtc_available(const std::string &name = "");
+  static void register_queue(const std::string &name, flib::device device_type,
+                             flib::vendor vendor_type,
+                             flib::backend backend_type,
+                             bool profiling = false);
+  static sycl::queue get_queue();
+  static sycl::queue get_queue(const std::string &name);
+  static cl_context get_clContext();
+  static sycl::context get_sycl_context();
+};
+
+} // namespace flib
+
+#include <funlib/Tensor/tensor_operations.hpp>
+#endif // _SYCL_HANDLER_H_
