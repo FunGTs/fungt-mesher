@@ -69,7 +69,7 @@ elseif(WIN32)
     endif()
 endif()
 
-project(FunGTMesher)
+project(FunGTMesherTests)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -110,6 +110,7 @@ endif()
 include_directories(
     ${FGT_MESHER_BASE_DIR}
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer
+    ${FGT_MESHER_BASE_DIR}/WeightLoader
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image
 )
 
@@ -117,19 +118,27 @@ include_directories(
 # SOURCE FILES
 # ════════════════════════════════════════════════════════════════════════════
 set(SOURCE_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_normalization.cpp
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer/image_tokenizer.cpp
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image/stb_image.cpp
 )
 
 # ════════════════════════════════════════════════════════════════════════════
-# EXECUTABLE
+# EXECUTABLE: Normalization Test (SYCL)
 # ════════════════════════════════════════════════════════════════════════════
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL dl)
 target_compile_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
 target_link_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
+
+# ════════════════════════════════════════════════════════════════════════════
+# EXECUTABLE: WeightLoader Test (no SYCL required)
+# ════════════════════════════════════════════════════════════════════════════
+add_executable(TestWeightLoader
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_weight_loader.cpp
+    ${FGT_MESHER_BASE_DIR}/WeightLoader/weight_loader.cpp
+)
 
 # ════════════════════════════════════════════════════════════════════════════
 # BUILD SUMMARY

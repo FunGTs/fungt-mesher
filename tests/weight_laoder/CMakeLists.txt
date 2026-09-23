@@ -110,6 +110,7 @@ endif()
 include_directories(
     ${FGT_MESHER_BASE_DIR}
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer
+    ${FGT_MESHER_BASE_DIR}/WeightLoader
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image
 )
 
@@ -117,8 +118,9 @@ include_directories(
 # SOURCE FILES
 # ════════════════════════════════════════════════════════════════════════════
 set(SOURCE_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_weight_loader.cpp
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer/image_tokenizer.cpp
+    ${FGT_MESHER_BASE_DIR}/WeightLoader/weight_loader.cpp
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image/stb_image.cpp
 )
 

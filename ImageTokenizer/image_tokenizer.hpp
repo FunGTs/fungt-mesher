@@ -19,6 +19,7 @@ namespace fungt::mesher {
     public:
         ImageTokenizer(std::size_t patch_size = 16, std::size_t embedding_dim = 768, std::size_t channels = 3);
         std::vector<float> tokenize(const std::string &path_image);
+        std::vector<unsigned char> resize224(const unsigned char *src, int width, int height);
     };
 }
 
