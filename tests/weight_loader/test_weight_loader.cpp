@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include "WeightLoader/weight_loader.hpp"
 
-bool test_cls_token(fungt::mesher::WeightLoader& loader) {
+bool test_cls_token(fgtm_tools::WeightLoader& loader) {
     std::printf("Testing cls_token...\n");
 
     auto scoped = loader.scope("image_tokenizer");
@@ -24,7 +24,7 @@ bool test_cls_token(fungt::mesher::WeightLoader& loader) {
     return true;
 }
 
-bool test_patch_projection_weight(fungt::mesher::WeightLoader& loader) {
+bool test_patch_projection_weight(fgtm_tools::WeightLoader& loader) {
     std::printf("Testing patch_projection.weight...\n");
 
     auto scoped = loader.scope("image_tokenizer");
@@ -48,7 +48,7 @@ bool test_patch_projection_weight(fungt::mesher::WeightLoader& loader) {
     return true;
 }
 
-bool test_position_embeddings(fungt::mesher::WeightLoader& loader) {
+bool test_position_embeddings(fgtm_tools::WeightLoader& loader) {
     std::printf("Testing position_embeddings...\n");
 
     auto scoped = loader.scope("image_tokenizer");
@@ -70,7 +70,7 @@ bool test_position_embeddings(fungt::mesher::WeightLoader& loader) {
     return true;
 }
 
-bool test_scoped_loader(fungt::mesher::WeightLoader& loader) {
+bool test_scoped_loader(fgtm_tools::WeightLoader& loader) {
     std::printf("Testing ScopedWeightLoader...\n");
 
     auto scoped = loader.scope("image_tokenizer");
@@ -87,7 +87,7 @@ bool test_scoped_loader(fungt::mesher::WeightLoader& loader) {
     return true;
 }
 
-bool test_not_found(fungt::mesher::WeightLoader& loader) {
+bool test_not_found(fgtm_tools::WeightLoader& loader) {
     std::printf("Testing error on missing weight...\n");
 
     try {
@@ -100,7 +100,7 @@ bool test_not_found(fungt::mesher::WeightLoader& loader) {
     }
 }
 
-bool test_lazy_loading(fungt::mesher::WeightLoader& loader) {
+bool test_lazy_loading(fgtm_tools::WeightLoader& loader) {
     std::printf("Testing lazy loading...\n");
 
     auto shape = loader.shape("image_tokenizer/cls_token");
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
     std::printf("Weights directory: %s\n\n", weights_dir);
 
     try {
-        fungt::mesher::WeightLoader loader(weights_dir);
+        fgtm_tools::WeightLoader loader(weights_dir);
 
         int passed = 0;
         int failed = 0;

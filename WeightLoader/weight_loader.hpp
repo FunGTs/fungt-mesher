@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <memory>
 
-namespace fungt::mesher {
+namespace fgtm_tools {
 
 class WeightLoader;
 
@@ -40,12 +40,16 @@ private:
     std::size_t compute_element_count(const std::vector<int>& shape) const;
 
 public:
-    explicit WeightLoader(const std::string& dir_path);
+    WeightLoader(){
+
+    }
+    WeightLoader(const std::string& dir_path);
 
     const std::vector<float>& get(const std::string& name);
     std::vector<int> shape(const std::string& name) const;
     ScopedWeightLoader scope(const std::string& prefix);
     bool has(const std::string& name) const;
+    void set_model_path(const std::string &dir_path);
 };
 
 }

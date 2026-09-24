@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace fungt::mesher {
+namespace fgtm_tools {
 
 namespace {
 
@@ -280,4 +280,18 @@ bool WeightLoader::has(const std::string& name) const {
     return m_manifest.find(name) != m_manifest.end();
 }
 
+void WeightLoader::set_model_path(const std::string &dir_path)
+{
+    m_manifest.clear();
+    m_base_dir = dir_path;
+    if (m_base_dir.empty())
+    {
+        throw std::runtime_error("WeightLoader: directory path cannot be empty");
+    }
+    if (m_base_dir.back() != '/')
+    {
+        m_base_dir += '/';
+    }
+    parse_manifest(m_base_dir + "weights.json");
+}
 }

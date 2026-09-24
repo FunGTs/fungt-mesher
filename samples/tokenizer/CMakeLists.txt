@@ -110,6 +110,11 @@ endif()
 include_directories(
     ${FGT_MESHER_BASE_DIR}
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer
+    ${FGT_MESHER_BASE_DIR}/WeightLoader
+    ${FGT_MESHER_BASE_DIR}/FunGTMesher
+    ${FGT_MESHER_BASE_DIR}/ComputeBackends
+    ${FGT_MESHER_BASE_DIR}/Mesh
+    ${FGT_MESHER_BASE_DIR}/Path_Manager
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image
 )
 
@@ -118,7 +123,12 @@ include_directories(
 # ════════════════════════════════════════════════════════════════════════════
 set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${FGT_MESHER_BASE_DIR}/FunGTMesher/fungt_mesher.cpp
+    ${FGT_MESHER_BASE_DIR}/ComputeBackends/compute_backends.cpp
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer/image_tokenizer.cpp
+    ${FGT_MESHER_BASE_DIR}/WeightLoader/weight_loader.cpp
+    ${FGT_MESHER_BASE_DIR}/Mesh/mesh.cpp
+    ${FGT_MESHER_BASE_DIR}/Path_Manager/path_manager.cpp
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image/stb_image.cpp
 )
 
@@ -127,7 +137,7 @@ set(SOURCE_FILES
 # ════════════════════════════════════════════════════════════════════════════
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL dl)
+target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL GL dl)
 target_compile_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
 target_link_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
 
