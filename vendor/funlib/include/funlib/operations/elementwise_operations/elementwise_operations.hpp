@@ -13,8 +13,16 @@ Tensor<T> add(const Tensor<T> &left, const Tensor<T> &right, sycl::queue Q,
               sycl::event *kernel_event = nullptr);
 
 template <typename T>
+Tensor<T> add_bias(const Tensor<T> &input, const Tensor<T> &bias, sycl::queue Q,
+                   sycl::event *kernel_event = nullptr);
+
+template <typename T>
 Tensor<T> gelu(const Tensor<T> &input, sycl::queue Q,
                sycl::event *kernel_event = nullptr);
+
+template <typename T>
+Tensor<T> geglu(const Tensor<T> &input, sycl::queue Q,
+                sycl::event *kernel_event = nullptr);
 
 } // namespace flib::operations
 

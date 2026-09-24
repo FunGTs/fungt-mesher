@@ -128,7 +128,7 @@ set(SOURCE_FILES
 # ════════════════════════════════════════════════════════════════════════════
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL dl)
+target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL GL dl)
 target_compile_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
 target_link_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
 
@@ -136,7 +136,7 @@ target_link_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_T
 # EXECUTABLE: WeightLoader Test (no SYCL required)
 # ════════════════════════════════════════════════════════════════════════════
 add_executable(TestWeightLoader
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_weight_loader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/weight_loader/test_weight_loader.cpp
     ${FGT_MESHER_BASE_DIR}/WeightLoader/weight_loader.cpp
 )
 

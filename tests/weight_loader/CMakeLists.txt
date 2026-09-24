@@ -119,9 +119,7 @@ include_directories(
 # ════════════════════════════════════════════════════════════════════════════
 set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/test_weight_loader.cpp
-    ${FGT_MESHER_BASE_DIR}/ImageTokenizer/image_tokenizer.cpp
     ${FGT_MESHER_BASE_DIR}/WeightLoader/weight_loader.cpp
-    ${FGT_MESHER_BASE_DIR}/vendor/stb_image/stb_image.cpp
 )
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -129,7 +127,7 @@ set(SOURCE_FILES
 # ════════════════════════════════════════════════════════════════════════════
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL dl)
+target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL GL dl)
 target_compile_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
 target_link_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
 

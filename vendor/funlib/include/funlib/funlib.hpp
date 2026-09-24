@@ -9,5 +9,6 @@
 #include <funlib/operations/normalization/normalization.hpp>
 #include <funlib/operations/softmax/softmax.hpp>
 #include <funlib/sycl/sycl_handler.hpp>
+#include <funlib/weights/weight_loader.hpp>
 
 #endif // FUNLIB_HPP
