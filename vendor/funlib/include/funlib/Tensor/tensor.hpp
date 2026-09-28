@@ -9,6 +9,7 @@
 #include <sycl/sycl.hpp>
 #include <utility>
 #include <vector>
+#include <funlib/detail/tensor_traits.hpp>
 namespace flib {
 template <typename T> class Tensor {
   // Tensor is the basic data structure for the funlib library
@@ -82,6 +83,18 @@ public:
       m_data[i] = value;
     }
   }
+
+  //Traits:
+  // Returns the hidden detail view type
+  detail::TransposedTensorView<T> transpose() const & {
+      return detail::TransposedTensorView<T>(*this);
+  }
+
+  // Safety switch: Prevents transposing temporaries
+  detail::TransposedTensorView<T> transpose() && = delete;
+  detail::TransposedTensorView<T> transpose() const && = delete;
+
+
 };
 // Typedefs
 using tensor = Tensor<double>;
