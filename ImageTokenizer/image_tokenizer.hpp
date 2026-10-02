@@ -15,11 +15,10 @@ private:
   std::size_t m_channels;
   std::size_t m_in_features;
 
-  std::vector<float> normalize_image(const unsigned char *image_data,
-                                     int width, int height) const;
-  std::vector<float>
-  extract_normalized_patches(const float *normalized_image, int width,
-                             int height) const;
+  std::vector<float> normalize_image(const unsigned char *image_data, int width,
+                                     int height) const;
+  std::vector<float> extract_normalized_patches(const float *normalized_image,
+                                                int width, int height) const;
 
 public:
   ImageTokenizer(std::size_t patch_size = 16, std::size_t embedding_dim = 768,
