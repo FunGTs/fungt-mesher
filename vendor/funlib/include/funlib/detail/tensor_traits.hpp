@@ -7,59 +7,44 @@ template <typename T> class Tensor;
 
 namespace detail {
 
-//Wrap a tensor
-template<typename T>
-class TransposedTensorView{
+// Wrap a tensor
+template <typename T> class TransposedTensorView {
 
-    private:
-        const flib::Tensor<T> *m_tensor; 
+private:
+  const flib::Tensor<T> *m_tensor;
 
-    friend class flib::Tensor<T>;
-    explicit TransposedTensorView(const flib::Tensor<T> &tensor){
-        m_tensor = &tensor;
-    }
+  friend class flib::Tensor<T>;
+  explicit TransposedTensorView(const flib::Tensor<T> &tensor) {
+    m_tensor = &tensor;
+  }
 
-    public:
-    
-    const flib::Tensor<T>& tensor() const {
-        return *m_tensor;
-    }
-
-
+public:
+  const flib::Tensor<T> &tensor() const { return *m_tensor; }
 };
 
+template <typename T> struct tensor_operand_traits;
 
-template<typename T>
-struct tensor_operand_traits;
+// Traits specialization:
 
+// Raw tensor
+template <typename T> struct tensor_operand_traits<flib::Tensor<T>> {
 
-//Traits specialization:
-
-//Raw tensor
-template<typename T> 
-struct tensor_operand_traits<flib::Tensor<T>>{
-
-    using value_type = T; 
-    static const flib::Tensor<T> & tensor(const flib::Tensor<T>& value){
-        return value; 
-    }
-    static constexpr bool transposed = false;
-
+  using value_type = T;
+  static const flib::Tensor<T> &tensor(const flib::Tensor<T> &value) {
+    return value;
+  }
+  static constexpr bool transposed = false;
 };
 
-//Transposed Tensor
-template<typename T>
-struct tensor_operand_traits <TransposedTensorView<T>>{
-    
-    using value_type = T; 
-    static const flib::Tensor<T> & tensor(const TransposedTensorView<T>& value ){
-        return value.tensor(); 
-    }
-    static constexpr bool transposed = true;
+// Transposed Tensor
+template <typename T> struct tensor_operand_traits<TransposedTensorView<T>> {
 
-
+  using value_type = T;
+  static const flib::Tensor<T> &tensor(const TransposedTensorView<T> &value) {
+    return value.tensor();
+  }
+  static constexpr bool transposed = true;
 };
-
 
 } // namespace detail
 

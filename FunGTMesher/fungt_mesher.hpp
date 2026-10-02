@@ -3,6 +3,7 @@
 #include "ComputeBackends/compute_backends.hpp"
 #include "ImageEncoder/image_encoder.hpp"
 #include "ImageTokenizer/image_tokenizer.hpp"
+#include "TriplaneDecoder/triplane_decoder.hpp"
 #include "WeightLoader/weight_loader.hpp"
 #include <funlib/funlib.hpp>
 
@@ -12,6 +13,7 @@ private:
   fgtm_tools::WeightLoader m_weight_loader;
   std::shared_ptr<fgtm_tools::ImageTokenizer> m_image_tokenizer;
   std::shared_ptr<fgtm_tools::ImageEncoder> m_image_encoder;
+  std::shared_ptr<fgtm_tools::TriplaneDecoder> m_triplane_decoder;
   flib::vendor m_vendor;
   flib::backend m_backend;
   std::string m_backend_name;
@@ -20,6 +22,10 @@ private:
   FunGTMesher();
   void export_image_features(const flib::ftensor &features,
                              const std::string &path_output);
+  flib::ftensor drop_cls_token(const flib::ftensor &tokens);
+  DecoderWeights load_decoder_weights();
+  flib::ftensor decode_triplane(const flib::ftensor &image_tokens,
+                                const std::string &diagnostic_directory);
 
 public:
   ~FunGTMesher() = default;

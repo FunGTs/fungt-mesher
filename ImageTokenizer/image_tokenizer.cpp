@@ -50,21 +50,19 @@ flib::ftensor ImageTokenizer::tokenize(const std::string &path_image,
   std::ofstream preprocessed_output("funlib_preprocessed_input.bin",
                                     std::ios::binary);
   if (!preprocessed_output.is_open()) {
-    throw std::runtime_error(
-        "Failed to open preprocessed image output: "
-        "funlib_preprocessed_input.bin");
+    throw std::runtime_error("Failed to open preprocessed image output: "
+                             "funlib_preprocessed_input.bin");
   }
   preprocessed_output.write(
       reinterpret_cast<const char *>(normalized_image.data()),
       static_cast<std::streamsize>(normalized_image.size() * sizeof(float)));
   if (!preprocessed_output) {
-    throw std::runtime_error(
-        "Failed to write preprocessed image output: "
-        "funlib_preprocessed_input.bin");
+    throw std::runtime_error("Failed to write preprocessed image output: "
+                             "funlib_preprocessed_input.bin");
   }
 
-  std::vector<float> tokens = extract_normalized_patches(
-      normalized_image.data(), width, height);
+  std::vector<float> tokens =
+      extract_normalized_patches(normalized_image.data(), width, height);
 
   flib::ftensor raw_tokens({static_cast<std::size_t>(total_patches),
                             static_cast<std::size_t>(token_dim)},
@@ -105,8 +103,7 @@ ImageTokenizer::normalize_image(const unsigned char *image_data, int width,
             (y * width + x) * static_cast<int>(m_channels) + channel;
         const int destination = channel * width * height + y * width + x;
         const float value = static_cast<float>(image_data[source]) / 255.0f;
-        normalized_image[destination] =
-            (value - mean[channel]) / std[channel];
+        normalized_image[destination] = (value - mean[channel]) / std[channel];
       }
     }
   }
@@ -114,8 +111,9 @@ ImageTokenizer::normalize_image(const unsigned char *image_data, int width,
   return normalized_image;
 }
 
-std::vector<float> ImageTokenizer::extract_normalized_patches(
-    const float *normalized_image, int width, int height) const {
+std::vector<float>
+ImageTokenizer::extract_normalized_patches(const float *normalized_image,
+                                           int width, int height) const {
   const int x_patches = width / static_cast<int>(m_patch_size);
   const int y_patches = height / static_cast<int>(m_patch_size);
   const int token_dim =

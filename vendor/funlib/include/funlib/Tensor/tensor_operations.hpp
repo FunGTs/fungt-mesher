@@ -49,7 +49,7 @@ public:
   static T dot(const Tensor<T> &A, const Tensor<T> &B, sycl::queue Q);
   template <typename T> static T reduction(const Tensor<T> &A, sycl::queue Q);
 
-  //using traits: 
+  // using traits:
   template <typename Left, typename Right>
   static Tensor<typename detail::tensor_operand_traits<Left>::value_type>
   gemm_batched(const Left &left, const Right &right, sycl::queue queue,
@@ -61,10 +61,9 @@ public:
     static_assert(std::is_same_v<T, typename RightTraits::value_type>,
                   "GEMM tensors must use the same data type");
 
-    return gemm_batched_impl(LeftTraits::tensor(left),
-                             RightTraits::tensor(right), queue,
-                             LeftTraits::transposed, RightTraits::transposed,
-                             kernel_event);
+    return gemm_batched_impl(
+        LeftTraits::tensor(left), RightTraits::tensor(right), queue,
+        LeftTraits::transposed, RightTraits::transposed, kernel_event);
   }
 
 private:
@@ -73,7 +72,6 @@ private:
                                      sycl::queue Q, bool transpose_A,
                                      bool transpose_B,
                                      sycl::event *kernel_event);
-
 };
 // class sycl_handler;
 // Matrix times a vector Ax = b or Matrix times a matrix AB = C
