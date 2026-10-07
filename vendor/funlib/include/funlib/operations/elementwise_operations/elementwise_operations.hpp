@@ -21,6 +21,15 @@ Tensor<T> gelu(const Tensor<T> &input, sycl::queue Q,
                sycl::event *kernel_event = nullptr);
 
 template <typename T>
+Tensor<T> silu(const Tensor<T> &input, sycl::queue Q,
+               sycl::event *kernel_event = nullptr);
+
+template <typename T>
+Tensor<T> shifted_exp_column(const Tensor<T> &input, std::size_t column,
+                             T shift, sycl::queue Q,
+                             sycl::event *kernel_event = nullptr);
+
+template <typename T>
 Tensor<T> geglu(const Tensor<T> &input, sycl::queue Q,
                 sycl::event *kernel_event = nullptr);
 
