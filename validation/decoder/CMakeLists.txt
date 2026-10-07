@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.15)
+project(ValidateDecoder LANGUAGES CXX)
+
+add_executable(validate_decoder validate_decoder.cpp)
+target_compile_features(validate_decoder PRIVATE cxx_std_17)
+
+add_executable(validate_decoder_intermediate validate_decoder_intermediate.cpp)
+target_compile_features(validate_decoder_intermediate PRIVATE cxx_std_17)

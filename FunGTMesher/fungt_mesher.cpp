@@ -95,8 +95,7 @@ void FunGTMesher::generate(const std::string &path_image,
   export_image_features(triplane_features, path_output);
 
   const auto total_end = Clock::now();
-  const auto milliseconds = [](Clock::time_point start,
-                               Clock::time_point end) {
+  const auto milliseconds = [](Clock::time_point start, Clock::time_point end) {
     return std::chrono::duration<double, std::milli>(end - start).count();
   };
 
@@ -105,8 +104,8 @@ void FunGTMesher::generate(const std::string &path_image,
   std::cout << "Image encoder: " << milliseconds(encoder_start, encoder_end)
             << " ms\n";
   std::cout << "CLS removal: " << milliseconds(cls_start, cls_end) << " ms\n";
-  std::cout << "Triplane decoder: "
-            << milliseconds(decoder_start, decoder_end) << " ms\n";
+  std::cout << "Triplane decoder: " << milliseconds(decoder_start, decoder_end)
+            << " ms\n";
   std::cout << "Total execution: " << milliseconds(total_start, total_end)
             << " ms\n";
 }
@@ -134,8 +133,7 @@ DecoderWeights FunGTMesher::load_decoder_weights() {
 
   // These weights are used once before and after all 16 decoder blocks.
   decoder.norm = upload_tensor({1024}, weights.get("norm.weight"), m_queue);
-  decoder.norm_bias =
-      upload_tensor({1024}, weights.get("norm.bias"), m_queue);
+  decoder.norm_bias = upload_tensor({1024}, weights.get("norm.bias"), m_queue);
   decoder.projection_in =
       upload_tensor({1024, 1024}, weights.get("proj_in.weight"), m_queue);
   decoder.projection_in_bias =
@@ -193,8 +191,8 @@ DecoderWeights FunGTMesher::load_decoder_weights() {
         {8192}, weights.get(prefix + "ff.net.0.proj.bias"), m_queue);
     block_weights.ffn_output = upload_tensor(
         {1024, 4096}, weights.get(prefix + "ff.net.2.weight"), m_queue);
-    block_weights.ffn_output_bias = upload_tensor(
-        {1024}, weights.get(prefix + "ff.net.2.bias"), m_queue);
+    block_weights.ffn_output_bias =
+        upload_tensor({1024}, weights.get(prefix + "ff.net.2.bias"), m_queue);
 
     decoder.blocks.push_back(std::move(block_weights));
   }
@@ -211,8 +209,8 @@ FunGTMesher::decode_triplane(const flib::ftensor &image_tokens,
   auto decoder_weights = load_decoder_weights();
 
   return m_triplane_decoder->decode(triplane_tokens, image_tokens,
-                                     decoder_weights, diagnostic_directory,
-                                     m_queue);
+                                    decoder_weights, diagnostic_directory,
+                                    m_queue);
 }
 
 void FunGTMesher::export_image_features(const flib::ftensor &features,
