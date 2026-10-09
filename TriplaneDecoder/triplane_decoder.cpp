@@ -230,11 +230,11 @@ namespace fgtm_tools{
         // Normalize the channels before the transformer blocks.
         decoded = flib::operations::group_norm(
             decoded, weights.norm, weights.norm_bias, 32, 1.0e-6f, queue);
-        save_tensor(
+        /*save_tensor(
             decoded,
             (std::filesystem::path(diagnostic_directory) /
              "funlib_after_norm.bin").string(),
-            queue);
+            queue);*/
 
         // Use token-first transformer layout: [1, 1024, 3072] -> [1, 3072, 1024]
         decoded = flib::tensor_operations::permute(
@@ -243,31 +243,31 @@ namespace fgtm_tools{
         // Project features into the decoder.
         decoded = linear(decoded, weights.projection_in,
                          weights.projection_in_bias, queue);
-        save_tensor(
+        /*save_tensor(
             decoded,
             (std::filesystem::path(diagnostic_directory) /
              "funlib_after_proj_in.bin").string(),
-            queue);
+            queue);*/
 
         // Refine the triplane and inject image information.
         for (std::size_t block = 0; block < weights.blocks.size(); ++block) {
             decode_block(decoded, image_tokens, weights.blocks[block], queue);
-            save_tensor(
+            /*save_tensor(
                 decoded,
                 (std::filesystem::path(diagnostic_directory) /
                  ("funlib_after_block" + std::to_string(block) + ".bin"))
                     .string(),
-                queue);
+                queue);*/
         }
 
         // Project back to the triplane representation.
         decoded = linear(decoded, weights.projection_out,
                          weights.projection_out_bias, queue);
-        save_tensor(
+        /*save_tensor(
             decoded,
             (std::filesystem::path(diagnostic_directory) /
              "funlib_after_proj_out.bin").string(),
-            queue);
+            queue);*/
 
         // Restore channel-first layout: [1, 3072, 1024] -> [1, 1024, 3072]
         decoded = flib::tensor_operations::permute(
@@ -275,11 +275,11 @@ namespace fgtm_tools{
 
         // Add the original learned triplane features.
         auto output = flib::operations::add(decoded, residual, queue);
-        save_tensor(
+        /*save_tensor(
             output,
             (std::filesystem::path(diagnostic_directory) /
              "funlib_final_output.bin").string(),
-            queue);
+            queue);*/
         return output;
     }
         

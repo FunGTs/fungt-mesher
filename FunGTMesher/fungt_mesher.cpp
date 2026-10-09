@@ -26,6 +26,7 @@ FunGTMesher::FunGTMesher() {
   m_image_tokenizer = std::make_shared<fgtm_tools::ImageTokenizer>();
   m_image_encoder = std::make_shared<fgtm_tools::ImageEncoder>();
   m_triplane_decoder = std::make_shared<fgtm_tools::TriplaneDecoder>();
+  m_nerf = std::make_shared<fgtm_tools::NeRF>();
 
   switch (ComputeBackend::GetBackend()) {
   case Backend::SYCL_CUDA:
@@ -71,9 +72,9 @@ void FunGTMesher::generate(const std::string &path_image,
   auto image_features = image_tokenizer(path_image);
   m_queue.wait_and_throw();
   const auto tokenizer_end = Clock::now();
-  export_image_features(
+  /*export_image_features(
       image_features,
-      (diagnostic_directory / "funlib_after_embeddings.bin").string());
+      (diagnostic_directory / "funlib_after_embeddings.bin").string());*/
 
   const auto encoder_start = Clock::now();
   image_encoder(image_features, diagnostic_directory.string());
@@ -92,7 +93,25 @@ void FunGTMesher::generate(const std::string &path_image,
       decode_triplane(image_tokens, diagnostic_directory.string());
   m_queue.wait_and_throw();
   const auto decoder_end = Clock::now();
-  export_image_features(triplane_features, path_output);
+
+  // Detokenize and upsample the three feature planes.
+  const auto post_process_start = Clock::now();
+  auto upsampled_triplane =
+      post_process_triplane(std::move(triplane_features));
+  m_queue.wait_and_throw();
+  const auto post_process_end = Clock::now();
+  /*export_image_features(
+      upsampled_triplane,
+      (diagnostic_directory / "funlib_upsample_output.bin").string());*/
+
+  // Query the triplane on a 64^3 grid and predict one density per point.
+  const auto nerf_start = Clock::now();
+  auto nerf_weights = load_nerf_weights();
+  auto density_grid =
+      m_nerf->compute_density(upsampled_triplane, nerf_weights, m_queue);
+  m_queue.wait_and_throw();
+  const auto nerf_end = Clock::now();
+  export_density_grid(density_grid, path_output);
 
   const auto total_end = Clock::now();
   const auto milliseconds = [](Clock::time_point start, Clock::time_point end) {
@@ -105,6 +124,10 @@ void FunGTMesher::generate(const std::string &path_image,
             << " ms\n";
   std::cout << "CLS removal: " << milliseconds(cls_start, cls_end) << " ms\n";
   std::cout << "Triplane decoder: " << milliseconds(decoder_start, decoder_end)
+            << " ms\n";
+  std::cout << "Triplane post-process: "
+            << milliseconds(post_process_start, post_process_end) << " ms\n";
+  std::cout << "NeRF density grid: " << milliseconds(nerf_start, nerf_end)
             << " ms\n";
   std::cout << "Total execution: " << milliseconds(total_start, total_end)
             << " ms\n";
@@ -213,20 +236,85 @@ FunGTMesher::decode_triplane(const flib::ftensor &image_tokens,
                                     m_queue);
 }
 
-void FunGTMesher::export_image_features(const flib::ftensor &features,
-                                        const std::string &path_output) {
-  auto host_features = features.to_host(m_queue);
+flib::ftensor
+FunGTMesher::post_process_triplane(flib::ftensor decoder_output) {
+  constexpr std::size_t plane_count = 3;
+  constexpr std::size_t input_channels = 1024;
+  constexpr std::size_t input_size = 32;
+  constexpr std::size_t output_channels = 40;
+
+  if (decoder_output.getShape() !=
+      std::vector<std::size_t>{1, input_channels,
+                               plane_count * input_size * input_size}) {
+    throw std::invalid_argument(
+        "Triplane post-process expects shape [1,1024,3072]");
+  }
+
+  // Expose the plane and spatial dimensions: [B,Ct,Np*Hp*Wp] ->
+  // [B,Ct,Np,Hp,Wp].
+  decoder_output.reshape(
+      {1, input_channels, plane_count, input_size, input_size});
+
+  // Move planes before channels: [B,Ct,Np,Hp,Wp] -> [B,Np,Ct,Hp,Wp].
+  auto triplane = flib::tensor_operations::permute(
+      decoder_output, {0, 2, 1, 3, 4}, m_queue);
+
+  // Treat each plane as one NCHW batch element.
+  triplane.reshape({plane_count, input_channels, input_size, input_size});
+
+  auto weight = upload_tensor(
+      {input_channels, output_channels, 2, 2},
+      m_weight_loader.get("post_processor.upsample.weight"), m_queue);
+  auto bias =
+      upload_tensor({output_channels},
+                    m_weight_loader.get("post_processor.upsample.bias"),
+                    m_queue);
+
+  // Kernel=2 and stride=2 produce [3,40,64,64] without overlap.
+  return flib::operations::convolution2dTranspose(
+      triplane, weight, bias, 2, 0, 0, 1, m_queue);
+}
+
+fgtm_tools::NeRFWeights FunGTMesher::load_nerf_weights() {
+  static constexpr std::size_t layer_indices[] = {0,  2,  4,  6,  8,
+                                                   10, 12, 14, 16, 18};
+
+  fgtm_tools::NeRFWeights weights;
+  weights.layers.reserve(10);
+
+  for (std::size_t layer = 0; layer < 10; ++layer) {
+    const std::size_t manifest_index = layer_indices[layer];
+    const std::string prefix =
+        "decoder.layers." + std::to_string(manifest_index);
+    const std::size_t input_size = layer == 0 ? 120 : 64;
+    const std::size_t output_size = layer == 9 ? 4 : 64;
+
+    fgtm_tools::NeRFData data;
+    data.weight = upload_tensor(
+        {output_size, input_size},
+        m_weight_loader.get(prefix + ".weight"), m_queue);
+    data.bias = upload_tensor({output_size},
+                              m_weight_loader.get(prefix + ".bias"), m_queue);
+    weights.layers.push_back(std::move(data));
+  }
+
+  return weights;
+}
+
+void FunGTMesher::export_density_grid(const flib::ftensor &density,
+                                      const std::string &path_output) {
+  const auto host_density = density.to_host(m_queue);
   std::ofstream output(path_output, std::ios::binary);
   if (!output.is_open()) {
-    throw std::runtime_error("Failed to open image feature output: " +
+    throw std::runtime_error("Failed to open density grid output: " +
                              path_output);
   }
 
   output.write(
-      reinterpret_cast<const char *>(host_features.data()),
-      static_cast<std::streamsize>(host_features.size() * sizeof(float)));
+      reinterpret_cast<const char *>(host_density.data()),
+      static_cast<std::streamsize>(host_density.size() * sizeof(float)));
   if (!output) {
-    throw std::runtime_error("Failed to write image features: " + path_output);
+    throw std::runtime_error("Failed to write density grid: " + path_output);
   }
 }
 
@@ -318,10 +406,10 @@ void FunGTMesher::image_encoder(flib::ftensor &tokens,
     m_image_encoder->set_weights(std::move(device_weights));
     m_image_encoder->encode_layer(tokens, m_queue);
 
-    export_image_features(
+    /*export_image_features(
         tokens, (std::filesystem::path(diagnostic_directory) /
                  ("funlib_after_layer" + std::to_string(layer) + ".bin"))
-                    .string());
+                    .string());*/
   }
 
   auto final_norm_weight = upload_tensor(

@@ -47,7 +47,7 @@ flib::ftensor ImageTokenizer::tokenize(const std::string &path_image,
   std::vector<float> normalized_image =
       normalize_image(image_resized.data(), width, height);
 
-  std::ofstream preprocessed_output("funlib_preprocessed_input.bin",
+  /*std::ofstream preprocessed_output("funlib_preprocessed_input.bin",
                                     std::ios::binary);
   if (!preprocessed_output.is_open()) {
     throw std::runtime_error("Failed to open preprocessed image output: "
@@ -59,7 +59,7 @@ flib::ftensor ImageTokenizer::tokenize(const std::string &path_image,
   if (!preprocessed_output) {
     throw std::runtime_error("Failed to write preprocessed image output: "
                              "funlib_preprocessed_input.bin");
-  }
+  }*/
 
   std::vector<float> tokens =
       extract_normalized_patches(normalized_image.data(), width, height);
