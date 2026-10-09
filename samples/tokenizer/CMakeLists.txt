@@ -111,6 +111,7 @@ include_directories(
     ${FGT_MESHER_BASE_DIR}
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer
     ${FGT_MESHER_BASE_DIR}/ImageEncoder
+    ${FGT_MESHER_BASE_DIR}/NeRF
     ${FGT_MESHER_BASE_DIR}/TriplaneDecoder
     ${FGT_MESHER_BASE_DIR}/WeightLoader
     ${FGT_MESHER_BASE_DIR}/FunGTMesher
@@ -129,6 +130,7 @@ set(SOURCE_FILES
     ${FGT_MESHER_BASE_DIR}/ComputeBackends/compute_backends.cpp
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer/image_tokenizer.cpp
     ${FGT_MESHER_BASE_DIR}/ImageEncoder/image_encoder.cpp
+    ${FGT_MESHER_BASE_DIR}/NeRF/nerf.cpp
     ${FGT_MESHER_BASE_DIR}/TriplaneDecoder/triplane_decoder.cpp
     ${FGT_MESHER_BASE_DIR}/WeightLoader/weight_loader.cpp
     ${FGT_MESHER_BASE_DIR}/Mesh/mesh.cpp
