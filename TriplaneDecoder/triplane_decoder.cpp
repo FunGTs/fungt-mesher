@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 
 namespace fgtm_tools{
@@ -219,10 +220,20 @@ namespace fgtm_tools{
         // [planes, channels, height, width]
         // [3, 1024, 32, 32]
 
-        // The Colab reference uses a direct contiguous reshape.
-        // [3, 1024, 32, 32] -> [1, 1024, 3072]
-        auto decoded = triplane;
+        // Group each channel's three planes before flattening their positions.
+        // [3, 1024, 32, 32] -> [1024, 3, 32, 32]
+        auto decoded = flib::tensor_operations::permute(
+            triplane, {1, 0, 2, 3}, queue);
+
+        // [1024, 3, 32, 32] -> [1, 1024, 3072]
         decoded.reshape({1, m_embedding_size, m_token_count});
+
+        const auto decoded_values = decoded.to_host(queue);
+        std::cout << "Triplane tokens first 4: ["
+                  << decoded_values[0] << ", "
+                  << decoded_values[1] << ", "
+                  << decoded_values[2] << ", "
+                  << decoded_values[3] << "]\n";
 
         // Keep the learned triplane for the outer residual.
         auto residual = decoded;

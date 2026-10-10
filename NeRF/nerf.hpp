@@ -20,8 +20,10 @@ namespace fgtm_tools {
     class NeRF {
 
         private: 
-            int m_grid_size  = 64; 
-            int m_num_points = m_grid_size * m_grid_size * m_grid_size;
+            std::size_t m_grid_size = 128;
+            std::size_t m_num_points =
+                m_grid_size * m_grid_size * m_grid_size;
+            static constexpr std::size_t m_points_per_batch = 64 * 64 * 64;
             float m_radius = 0.87f;
 
             // Applies one linear layer:
@@ -31,7 +33,9 @@ namespace fgtm_tools {
 
             // Generates the world grid in [-0.87,0.87] and normalizes its
             // [N,3] positions to [-1,1] for triplane sampling.
-            flib::ftensor generate_grid(sycl::queue &queue);
+            flib::ftensor generate_grid(std::size_t point_offset,
+                                        std::size_t point_count,
+                                        sycl::queue &queue);
 
             flib::ftensor forward_propagation(flib::ftensor features,
                                               const NeRFWeights &weights,

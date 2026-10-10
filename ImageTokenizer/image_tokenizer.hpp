@@ -31,6 +31,8 @@ public:
                          sycl::queue &queue);
   std::vector<unsigned char> resize224(const unsigned char *src, int width,
                                        int height);
+  std::vector<unsigned char> resize512(const unsigned char *src, int width,
+                                       int height);
   std::vector<float> extract_patches(const unsigned char *image_data, int width,
                                      int height) const;
   void setup(std::size_t patch_size = 16, std::size_t embedding_dim = 768,

@@ -171,4 +171,45 @@ std::vector<unsigned char> ImageTokenizer::resize224(const unsigned char *src,
   }
   return dst;
 }
+
+std::vector<unsigned char> ImageTokenizer::resize512(const unsigned char *src,
+                                                     int width, int height) {
+  constexpr int output_size = 512;
+  std::vector<unsigned char> dst(output_size * output_size * m_channels);
+  const float sx = static_cast<float>(width) / output_size;
+  const float sy = static_cast<float>(height) / output_size;
+
+  for (int oy = 0; oy < output_size; ++oy) {
+    for (int ox = 0; ox < output_size; ++ox) {
+      const float ix = (ox + 0.5f) * sx - 0.5f;
+      const float iy = (oy + 0.5f) * sy - 0.5f;
+      const int x0 = std::max(0, static_cast<int>(ix));
+      const int y0 = std::max(0, static_cast<int>(iy));
+      const int x1 = std::min(width - 1, x0 + 1);
+      const int y1 = std::min(height - 1, y0 + 1);
+      const float tx = ix - x0;
+      const float ty = iy - y0;
+
+      for (int channel = 0; channel < static_cast<int>(m_channels);
+           ++channel) {
+        const float p00 =
+            src[(y0 * width + x0) * m_channels + channel];
+        const float p10 =
+            src[(y0 * width + x1) * m_channels + channel];
+        const float p01 =
+            src[(y1 * width + x0) * m_channels + channel];
+        const float p11 =
+            src[(y1 * width + x1) * m_channels + channel];
+
+        dst[(oy * output_size + ox) * m_channels + channel] =
+            static_cast<unsigned char>(std::clamp(
+                (1 - tx) * (1 - ty) * p00 + tx * (1 - ty) * p10 +
+                    (1 - tx) * ty * p01 + tx * ty * p11,
+                0.0f, 255.0f));
+      }
+    }
+  }
+
+  return dst;
+}
 } // namespace fgtm_tools
