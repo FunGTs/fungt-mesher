@@ -3,9 +3,13 @@
 #include "ComputeBackends/compute_backends.hpp"
 #include "ImageEncoder/image_encoder.hpp"
 #include "ImageTokenizer/image_tokenizer.hpp"
+#include "NeRF/nerf.hpp"
 #include "TriplaneDecoder/triplane_decoder.hpp"
 #include "WeightLoader/weight_loader.hpp"
+#include "Path_Manager/path_manager.hpp"
 #include <funlib/funlib.hpp>
+
+enum class ImageResolution { Standard224, HighResolution512 };
 
 class FunGTMesher {
 private:
@@ -14,23 +18,30 @@ private:
   std::shared_ptr<fgtm_tools::ImageTokenizer> m_image_tokenizer;
   std::shared_ptr<fgtm_tools::ImageEncoder> m_image_encoder;
   std::shared_ptr<fgtm_tools::TriplaneDecoder> m_triplane_decoder;
+  std::shared_ptr<fgtm_tools::NeRF> m_nerf;
   flib::vendor m_vendor;
   flib::backend m_backend;
   std::string m_backend_name;
   bool m_model_set = false;
 
   FunGTMesher();
-  void export_image_features(const flib::ftensor &features,
-                             const std::string &path_output);
+  void export_density_grid(const flib::ftensor &density,
+                           const std::string &path_output);
+  void rcf();
   flib::ftensor drop_cls_token(const flib::ftensor &tokens);
   DecoderWeights load_decoder_weights();
   flib::ftensor decode_triplane(const flib::ftensor &image_tokens,
                                 const std::string &diagnostic_directory);
+  flib::ftensor post_process_triplane(flib::ftensor decoder_output);
+  fgtm_tools::NeRFWeights load_nerf_weights();
 
 public:
   ~FunGTMesher() = default;
-  void generate(const std::string &path_image, const std::string &path_output);
-  flib::ftensor image_tokenizer(const std::string &path_image);
+  void generate(const std::string &path_image, const std::string &path_output,
+                ImageResolution resolution = ImageResolution::Standard224);
+  flib::ftensor image_tokenizer(
+      const std::string &path_image,
+      ImageResolution resolution = ImageResolution::Standard224);
   void image_encoder(flib::ftensor &tokens,
                      const std::string &diagnostic_directory);
 
@@ -39,7 +50,7 @@ public:
       m_weight_loader.set_model_path(path_to_model);
       m_model_set = true;
     } else {
-      // later we use the default path for the fungt-model
+      rcf();
     }
   }
   static std::unique_ptr<FunGTMesher> create_mesher() {

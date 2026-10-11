@@ -111,12 +111,12 @@ include_directories(
     ${FGT_MESHER_BASE_DIR}
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer
     ${FGT_MESHER_BASE_DIR}/ImageEncoder
+    ${FGT_MESHER_BASE_DIR}/NeRF
     ${FGT_MESHER_BASE_DIR}/TriplaneDecoder
     ${FGT_MESHER_BASE_DIR}/WeightLoader
     ${FGT_MESHER_BASE_DIR}/FunGTMesher
     ${FGT_MESHER_BASE_DIR}/ComputeBackends
     ${FGT_MESHER_BASE_DIR}/Mesh
-    ${FGT_MESHER_BASE_DIR}/Path_Manager
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image
 )
 
@@ -129,6 +129,7 @@ set(SOURCE_FILES
     ${FGT_MESHER_BASE_DIR}/ComputeBackends/compute_backends.cpp
     ${FGT_MESHER_BASE_DIR}/ImageTokenizer/image_tokenizer.cpp
     ${FGT_MESHER_BASE_DIR}/ImageEncoder/image_encoder.cpp
+    ${FGT_MESHER_BASE_DIR}/NeRF/nerf.cpp
     ${FGT_MESHER_BASE_DIR}/TriplaneDecoder/triplane_decoder.cpp
     ${FGT_MESHER_BASE_DIR}/WeightLoader/weight_loader.cpp
     ${FGT_MESHER_BASE_DIR}/Mesh/mesh.cpp
@@ -140,6 +141,10 @@ set(SOURCE_FILES
 # EXECUTABLE
 # ════════════════════════════════════════════════════════════════════════════
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    FGT_MESHER_BASE_DIR="${FGT_MESHER_BASE_DIR}"
+)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL GL dl)
 target_compile_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
