@@ -8,6 +8,8 @@
 #include "WeightLoader/weight_loader.hpp"
 #include <funlib/funlib.hpp>
 
+enum class ImageResolution { Standard224, HighResolution512 };
+
 class FunGTMesher {
 private:
   sycl::queue m_queue;
@@ -33,8 +35,11 @@ private:
 
 public:
   ~FunGTMesher() = default;
-  void generate(const std::string &path_image, const std::string &path_output);
-  flib::ftensor image_tokenizer(const std::string &path_image);
+  void generate(const std::string &path_image, const std::string &path_output,
+                ImageResolution resolution = ImageResolution::Standard224);
+  flib::ftensor image_tokenizer(
+      const std::string &path_image,
+      ImageResolution resolution = ImageResolution::Standard224);
   void image_encoder(flib::ftensor &tokens,
                      const std::string &diagnostic_directory);
 

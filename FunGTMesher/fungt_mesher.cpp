@@ -55,7 +55,8 @@ FunGTMesher::FunGTMesher() {
 }
 
 void FunGTMesher::generate(const std::string &path_image,
-                           const std::string &path_output) {
+                           const std::string &path_output,
+                           ImageResolution resolution) {
   if (!m_model_set) {
     throw std::runtime_error(
         "FunGTMesher::set_model() must be called before generate()");
@@ -69,7 +70,7 @@ void FunGTMesher::generate(const std::string &path_image,
   const auto total_start = Clock::now();
 
   const auto tokenizer_start = Clock::now();
-  auto image_features = image_tokenizer(path_image);
+  auto image_features = image_tokenizer(path_image, resolution);
   m_queue.wait_and_throw();
   const auto tokenizer_end = Clock::now();
   /*export_image_features(
@@ -81,9 +82,16 @@ void FunGTMesher::generate(const std::string &path_image,
   m_queue.wait_and_throw();
   const auto encoder_end = Clock::now();
 
-  // Remove CLS before cross-attention: [197, 768] -> [1, 196, 768].
+  // The 224 path preserves its validated CLS removal. The 512 path keeps all
+  // 1025 encoded tokens for cross-attention.
   const auto cls_start = Clock::now();
-  auto image_tokens = drop_cls_token(image_features);
+  auto image_tokens = [&]() {
+    if (resolution == ImageResolution::HighResolution512) {
+      image_features.reshape({1, 1025, 768});
+      return std::move(image_features);
+    }
+    return drop_cls_token(image_features);
+  }();
   m_queue.wait_and_throw();
   const auto cls_end = Clock::now();
 
@@ -122,7 +130,8 @@ void FunGTMesher::generate(const std::string &path_image,
             << " ms\n";
   std::cout << "Image encoder: " << milliseconds(encoder_start, encoder_end)
             << " ms\n";
-  std::cout << "CLS removal: " << milliseconds(cls_start, cls_end) << " ms\n";
+  std::cout << "Image-token preparation: "
+            << milliseconds(cls_start, cls_end) << " ms\n";
   std::cout << "Triplane decoder: " << milliseconds(decoder_start, decoder_end)
             << " ms\n";
   std::cout << "Triplane post-process: "
@@ -226,14 +235,32 @@ DecoderWeights FunGTMesher::load_decoder_weights() {
 flib::ftensor
 FunGTMesher::decode_triplane(const flib::ftensor &image_tokens,
                              const std::string &diagnostic_directory) {
+  using Clock = std::chrono::steady_clock;
+
+  const auto weight_upload_start = Clock::now();
   // Three learned 32x32 planes, each with 1024 feature channels.
   auto triplane_tokens = upload_tensor(
       {3, 1024, 32, 32}, m_weight_loader.get("tokenizer.embeddings"), m_queue);
   auto decoder_weights = load_decoder_weights();
+  m_queue.wait_and_throw();
+  const auto weight_upload_end = Clock::now();
 
-  return m_triplane_decoder->decode(triplane_tokens, image_tokens,
-                                    decoder_weights, diagnostic_directory,
-                                    m_queue);
+  const auto inference_start = Clock::now();
+  auto decoded = m_triplane_decoder->decode(
+      triplane_tokens, image_tokens, decoder_weights, diagnostic_directory,
+      m_queue);
+  m_queue.wait_and_throw();
+  const auto inference_end = Clock::now();
+
+  const auto milliseconds = [](Clock::time_point start, Clock::time_point end) {
+    return std::chrono::duration<double, std::milli>(end - start).count();
+  };
+  std::cout << "Decoder weight upload: "
+            << milliseconds(weight_upload_start, weight_upload_end) << " ms\n";
+  std::cout << "Decoder inference: "
+            << milliseconds(inference_start, inference_end) << " ms\n";
+
+  return decoded;
 }
 
 flib::ftensor
@@ -318,7 +345,9 @@ void FunGTMesher::export_density_grid(const flib::ftensor &density,
   }
 }
 
-flib::ftensor FunGTMesher::image_tokenizer(const std::string &path_image) {
+flib::ftensor
+FunGTMesher::image_tokenizer(const std::string &path_image,
+                             ImageResolution resolution) {
   auto weights = m_weight_loader.scope("image_tokenizer");
 
   const auto &weight_data = weights.get("patch_projection.weight");
@@ -339,9 +368,13 @@ flib::ftensor FunGTMesher::image_tokenizer(const std::string &path_image) {
   cls_token.copy_from(cls_token_data.data(), m_queue).wait();
   position_embeddings.copy_from(pos_embed_data.data(), m_queue).wait();
 
-  auto tokens = m_image_tokenizer->tokenize(path_image, projection_weight,
-                                            projection_bias, cls_token,
-                                            position_embeddings, m_queue);
+  auto tokens = resolution == ImageResolution::HighResolution512
+                    ? m_image_tokenizer->tokenize512(
+                          path_image, projection_weight, projection_bias,
+                          cls_token, position_embeddings, m_queue)
+                    : m_image_tokenizer->tokenize(
+                          path_image, projection_weight, projection_bias,
+                          cls_token, position_embeddings, m_queue);
 
   return tokens;
 }

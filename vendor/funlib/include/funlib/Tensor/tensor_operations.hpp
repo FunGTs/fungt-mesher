@@ -43,6 +43,10 @@ public:
   static Tensor<T> concatenate(const Tensor<T> &left, const Tensor<T> &right,
                                std::size_t axis, sycl::queue Q,
                                sycl::event *kernel_event = nullptr);
+  template <typename T>
+  static Tensor<T> slice(const Tensor<T> &input, std::size_t dimension,
+                         std::size_t start, std::size_t end, sycl::queue Q,
+                         sycl::event *kernel_event = nullptr);
 
   // dot product of two vectors or two one dimensional sets
   template <typename T>

@@ -19,11 +19,17 @@ flib::ftensor ImageEncoder::linear(const flib::ftensor &input,
 
 void ImageEncoder::encode_layer(flib::ftensor &image_tokens,
                                 sycl::queue &queue) const {
-  constexpr std::size_t token_count = 197;
   constexpr std::size_t embedding_size = 768;
   constexpr std::size_t head_count = 12;
   constexpr std::size_t head_size = 64;
   constexpr float epsilon = 1.0e-12f;
+
+  const auto &shape = image_tokens.getShape();
+  if (shape.size() != 2 || shape[1] != embedding_size) {
+    throw std::invalid_argument(
+        "ImageEncoder expects tokens with shape [N,768]");
+  }
+  const std::size_t token_count = shape[0];
 
   auto normalized =
       flib::operations::layer_norm(image_tokens, m_weights.norm_before_weight,

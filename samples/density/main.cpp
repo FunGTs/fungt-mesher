@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
   ComputeBackend::SetBackend(Backend::SYCL_CUDA);
   auto mesher = FunGTMesher::create_mesher();
   mesher->set_model(argv[1]);
-  mesher->generate(argv[2], argv[3]);
+  mesher->generate(argv[2], argv[3], ImageResolution::HighResolution512);
 
   return 0;
 }

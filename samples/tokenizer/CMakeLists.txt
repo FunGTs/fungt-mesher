@@ -117,7 +117,6 @@ include_directories(
     ${FGT_MESHER_BASE_DIR}/FunGTMesher
     ${FGT_MESHER_BASE_DIR}/ComputeBackends
     ${FGT_MESHER_BASE_DIR}/Mesh
-    ${FGT_MESHER_BASE_DIR}/Path_Manager
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image
 )
 
@@ -134,7 +133,6 @@ set(SOURCE_FILES
     ${FGT_MESHER_BASE_DIR}/TriplaneDecoder/triplane_decoder.cpp
     ${FGT_MESHER_BASE_DIR}/WeightLoader/weight_loader.cpp
     ${FGT_MESHER_BASE_DIR}/Mesh/mesh.cpp
-    ${FGT_MESHER_BASE_DIR}/Path_Manager/path_manager.cpp
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image/stb_image.cpp
 )
 
