@@ -237,13 +237,11 @@ FunGTMesher::decode_triplane(const flib::ftensor &image_tokens,
                              const std::string &diagnostic_directory) {
   using Clock = std::chrono::steady_clock;
 
-  const auto weight_upload_start = Clock::now();
   // Three learned 32x32 planes, each with 1024 feature channels.
   auto triplane_tokens = upload_tensor(
       {3, 1024, 32, 32}, m_weight_loader.get("tokenizer.embeddings"), m_queue);
   auto decoder_weights = load_decoder_weights();
   m_queue.wait_and_throw();
-  const auto weight_upload_end = Clock::now();
 
   const auto inference_start = Clock::now();
   auto decoded = m_triplane_decoder->decode(
@@ -255,8 +253,6 @@ FunGTMesher::decode_triplane(const flib::ftensor &image_tokens,
   const auto milliseconds = [](Clock::time_point start, Clock::time_point end) {
     return std::chrono::duration<double, std::milli>(end - start).count();
   };
-  std::cout << "Decoder weight upload: "
-            << milliseconds(weight_upload_start, weight_upload_end) << " ms\n";
   std::cout << "Decoder inference: "
             << milliseconds(inference_start, inference_end) << " ms\n";
 

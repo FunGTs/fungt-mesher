@@ -1,6 +1,5 @@
 #include "triplane_decoder.hpp"
 
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -217,14 +216,6 @@ namespace fgtm_tools{
         const std::string &diagnostic_directory,
         sycl::queue &queue) const {
 
-        using Clock = std::chrono::steady_clock;
-        const auto milliseconds = [](Clock::time_point start,
-                                     Clock::time_point end) {
-            return std::chrono::duration<double, std::milli>(end - start)
-                .count();
-        };
-        const auto setup_start = Clock::now();
-
         // Current triplane tensor shape
         // [planes, channels, height, width]
         // [3, 1024, 32, 32]
@@ -256,47 +247,15 @@ namespace fgtm_tools{
         // Project features into the decoder.
         decoded = linear(decoded, weights.projection_in,
                          weights.projection_in_bias, queue);
-        queue.wait_and_throw();
-        const auto setup_end = Clock::now();
         /*save_tensor(
             decoded,
             (std::filesystem::path(diagnostic_directory) /
              "funlib_after_proj_in.bin").string(),
             queue);*/
 
-        double self_attention_total = 0.0;
-        double cross_attention_total = 0.0;
-        double feed_forward_total = 0.0;
-
         // Refine the triplane and inject image information.
         for (std::size_t block = 0; block < weights.blocks.size(); ++block) {
-            const auto self_start = Clock::now();
-            self_attention(decoded, weights.blocks[block], queue);
-            queue.wait_and_throw();
-            const auto self_end = Clock::now();
-
-            const auto cross_start = Clock::now();
-            cross_attention(decoded, image_tokens, weights.blocks[block], queue);
-            queue.wait_and_throw();
-            const auto cross_end = Clock::now();
-
-            const auto feed_forward_start = Clock::now();
-            feed_forward(decoded, weights.blocks[block], queue);
-            queue.wait_and_throw();
-            const auto feed_forward_end = Clock::now();
-
-            const double self_time = milliseconds(self_start, self_end);
-            const double cross_time = milliseconds(cross_start, cross_end);
-            const double feed_forward_time =
-                milliseconds(feed_forward_start, feed_forward_end);
-            self_attention_total += self_time;
-            cross_attention_total += cross_time;
-            feed_forward_total += feed_forward_time;
-
-            std::cout << "Decoder block " << block
-                      << ": self-attention " << self_time
-                      << " ms, cross-attention " << cross_time
-                      << " ms, GEGLU " << feed_forward_time << " ms\n";
+            decode_block(decoded, image_tokens, weights.blocks[block], queue);
             /*save_tensor(
                 decoded,
                 (std::filesystem::path(diagnostic_directory) /
@@ -304,8 +263,6 @@ namespace fgtm_tools{
                     .string(),
                 queue);*/
         }
-
-        const auto final_start = Clock::now();
 
         // Project back to the triplane representation.
         decoded = linear(decoded, weights.projection_out,
@@ -322,19 +279,6 @@ namespace fgtm_tools{
 
         // Add the original learned triplane features.
         auto output = flib::operations::add(decoded, residual, queue);
-        queue.wait_and_throw();
-        const auto final_end = Clock::now();
-
-        std::cout << "Decoder setup: " << milliseconds(setup_start, setup_end)
-                  << " ms\n";
-        std::cout << "Decoder self-attention total: "
-                  << self_attention_total << " ms\n";
-        std::cout << "Decoder cross-attention total: "
-                  << cross_attention_total << " ms\n";
-        std::cout << "Decoder GEGLU total: " << feed_forward_total
-                  << " ms\n";
-        std::cout << "Decoder final projection: "
-                  << milliseconds(final_start, final_end) << " ms\n";
         /*save_tensor(
             output,
             (std::filesystem::path(diagnostic_directory) /
