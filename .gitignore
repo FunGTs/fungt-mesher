@@ -1,0 +1,13 @@
+# Build directories
+build/
+release/
+# toolchain
+toolchain/
+# Build directories (recursive)
+**/build/
+**/release/
+# toolchain recursive
+**/toolchain/
+assets_local/
+# funlib cmake config
+vendor/funlib/lib/cmake/

@@ -6,6 +6,7 @@
 #include "NeRF/nerf.hpp"
 #include "TriplaneDecoder/triplane_decoder.hpp"
 #include "WeightLoader/weight_loader.hpp"
+#include "Path_Manager/path_manager.hpp"
 #include <funlib/funlib.hpp>
 
 enum class ImageResolution { Standard224, HighResolution512 };
@@ -26,6 +27,7 @@ private:
   FunGTMesher();
   void export_density_grid(const flib::ftensor &density,
                            const std::string &path_output);
+  void rcf();
   flib::ftensor drop_cls_token(const flib::ftensor &tokens);
   DecoderWeights load_decoder_weights();
   flib::ftensor decode_triplane(const flib::ftensor &image_tokens,
@@ -48,7 +50,7 @@ public:
       m_weight_loader.set_model_path(path_to_model);
       m_model_set = true;
     } else {
-      // later we use the default path for the fungt-model
+      rcf();
     }
   }
   static std::unique_ptr<FunGTMesher> create_mesher() {

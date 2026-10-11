@@ -1,6 +1,7 @@
 #include "fungt_mesher.hpp"
 
 #include <chrono>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -10,6 +11,21 @@
 #include <vector>
 
 namespace {
+
+std::string expand_environment_variable(const std::string &value) {
+  if (value.size() < 4 || value.substr(0, 2) != "${" || value.back() != '}') {
+    return value;
+  }
+
+  const std::string variable_name = value.substr(2, value.size() - 3);
+  const char *variable_value = std::getenv(variable_name.c_str());
+  if (variable_value == nullptr || variable_value[0] == '\0') {
+    throw std::runtime_error("Environment variable is not set: " +
+                             variable_name);
+  }
+
+  return variable_value;
+}
 
 flib::ftensor upload_tensor(const std::vector<std::size_t> &shape,
                             const std::vector<float> &values,
@@ -339,6 +355,66 @@ void FunGTMesher::export_density_grid(const flib::ftensor &density,
   if (!output) {
     throw std::runtime_error("Failed to write density grid: " + path_output);
   }
+}
+
+void FunGTMesher::rcf() {
+  const std::string path = getAssetPath("fungt-mesher.config");
+  std::ifstream config(path);
+  if (!config.is_open()) {
+    throw std::runtime_error("Failed to open configuration file: " + path);
+  }
+
+  std::string model_path;
+  std::string line;
+  while (std::getline(config, line)) {
+    const std::size_t separator = line.find('=');
+    if (separator == std::string::npos) {
+      continue;
+    }
+
+    std::string key = line.substr(0, separator);
+    std::string value = line.substr(separator + 1);
+    const auto trim = [](std::string &text) {
+      const std::size_t first = text.find_first_not_of(" \t\r\n");
+      if (first == std::string::npos) {
+        text.clear();
+        return;
+      }
+      const std::size_t last = text.find_last_not_of(" \t\r\n");
+      text = text.substr(first, last - first + 1);
+    };
+    trim(key);
+    trim(value);
+
+    if (key == "model_path") {
+      value = expand_environment_variable(value);
+      std::filesystem::path resolved_path(value);
+
+      // If provided a relative path in the config file, resolve it against
+      // the root folder
+      if (resolved_path.is_relative()) {
+        resolved_path = findProjectRoot() / resolved_path;
+      }
+
+      resolved_path = std::filesystem::weakly_canonical(resolved_path);
+
+      if (!std::filesystem::exists(resolved_path)) {
+        throw std::runtime_error("Model weights path does not exist: " +
+                                 resolved_path.string());
+      }
+
+      model_path = resolved_path.string();
+      break;
+    }
+  }
+
+  if (model_path.empty()) {
+    throw std::runtime_error(
+        "Configuration file does not define model_path: " + path);
+  }
+
+  m_weight_loader.set_model_path(model_path);
+  m_model_set = true;
 }
 
 flib::ftensor
