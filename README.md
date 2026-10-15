@@ -23,6 +23,8 @@ Run the generator with an input image and output density file:
 ./FunGTMesher image.png --out density.bin
 ```
 
+currently only the density in binary form is allowed to export.
+
 ## Model weights
 
 FunGT Mesher does not include or distribute TripoSR model weights.
