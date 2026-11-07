@@ -8,6 +8,7 @@
 #include "WeightLoader/weight_loader.hpp"
 #include "Path_Manager/path_manager.hpp"
 #include <funlib/funlib.hpp>
+#include <funlib/graphics/marching_cubes.hpp>
 
 enum class ImageResolution { Standard224, HighResolution512 };
 
