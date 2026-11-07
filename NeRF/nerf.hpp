@@ -44,7 +44,11 @@ namespace fgtm_tools {
           public:
             NeRF() = default;
             ~NeRF() = default;
-            flib::ftensor compute_density(const flib::ftensor &triplane, const NeRFWeights &weights,sycl::queue &queue); 
+            flib::ftensor compute_density(const flib::ftensor &triplane, const NeRFWeights &weights,sycl::queue &queue);
+            flib::ftensor compute_color(const flib::ftensor &triplane,
+                                        const flib::ftensor &positions,
+                                        const NeRFWeights &weights,
+                                        sycl::queue &queue);
     };
 }
 

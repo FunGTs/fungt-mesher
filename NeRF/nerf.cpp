@@ -102,3 +102,78 @@ flib::ftensor fgtm_tools::NeRF::compute_density(const flib::ftensor &triplane,co
     return density;
 
 }
+
+flib::ftensor fgtm_tools::NeRF::compute_color(const flib::ftensor &triplane,
+                                              const flib::ftensor &positions,
+                                              const NeRFWeights &weights,
+                                              sycl::queue &queue) {
+
+    if (positions.getRank() != 2 || positions.getShape().size() != 2 || positions.getShape()[1] != 3) {
+    throw std::invalid_argument(
+        "NeRF color query expects positions with shape [N, 3]");
+    }
+
+    if (!positions.is_device() || !positions.is_accessible_from(queue)) {
+        throw std::invalid_argument(
+            "NeRF color positions must be accessible from the queue");
+    }
+
+    //Get total of vertices:
+    const std::size_t vertex_count = positions.getShape()[0];
+    flib::ftensor colors({vertex_count, 3}, queue);
+    if (vertex_count == 0) {
+        return colors;
+    }
+    flib::ftensor norm_pos({vertex_count, 3}, queue);
+
+    const float* pos_data_ptr = positions.device_data();
+
+    float * norm_pos_ptr = norm_pos.device_data();
+    float radius = m_radius;  
+
+    queue.submit([=](sycl::handler &h){
+        h.parallel_for(sycl::range<1>(vertex_count), [=](sycl::item<1> item){
+            const std::size_t vertex = item.get_id(0);
+
+            std::size_t x = vertex * 3;
+            std::size_t y = vertex * 3 + 1;
+            std::size_t z = vertex * 3 + 2;
+
+            norm_pos_ptr[x] = pos_data_ptr[x] / radius;
+            norm_pos_ptr[y] = pos_data_ptr[y] / radius;
+            norm_pos_ptr[z] = pos_data_ptr[z] / radius;
+
+        });
+    }).wait();
+
+
+    auto features = flib::operations::triplane_sample(
+        triplane,
+        norm_pos, queue);
+
+    auto output = forward_propagation(std::move(features), weights, queue);
+
+    // The decoder output is [density, red, green, blue].
+    if (output.getRank() != 2 || output.getShape()[0] != vertex_count || output.getShape()[1] < 4) {
+      throw std::invalid_argument( "NeRF decoder must produce at least four outputs");
+    }
+
+    const float *output_data = output.device_data();
+    float *color_data = colors.device_data();
+
+    queue.submit([=](sycl::handler &handler) {
+          handler.parallel_for(
+              sycl::range<1>(vertex_count), [=](sycl::item<1> item) {
+                const std::size_t vertex = item.get_id(0);
+
+                for (std::size_t channel = 0; channel < 3; ++channel) {
+                  const float logit = output_data[vertex * 4 + channel + 1];
+
+                  color_data[vertex * 3 + channel] =
+                      1.0f / (1.0f + sycl::exp(-logit));
+                }
+              });
+        }).wait();
+
+    return colors;
+}
