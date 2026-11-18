@@ -1,6 +1,9 @@
 #include "fungt_mesher.hpp"
+#include "Mesh/obj_exporter.hpp"
 
+#include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -87,7 +90,6 @@ void FunGTMesher::generate(const std::string &path_image,
 
   const auto tokenizer_start = Clock::now();
   auto image_features = image_tokenizer(path_image, resolution);
-  m_queue.wait_and_throw();
   const auto tokenizer_end = Clock::now();
   /*export_image_features(
       image_features,
@@ -95,7 +97,6 @@ void FunGTMesher::generate(const std::string &path_image,
 
   const auto encoder_start = Clock::now();
   image_encoder(image_features, diagnostic_directory.string());
-  m_queue.wait_and_throw();
   const auto encoder_end = Clock::now();
 
   // The 224 path preserves its validated CLS removal. The 512 path keeps all
@@ -108,21 +109,18 @@ void FunGTMesher::generate(const std::string &path_image,
     }
     return drop_cls_token(image_features);
   }();
-  m_queue.wait_and_throw();
   const auto cls_end = Clock::now();
 
   // Convert encoded image tokens into triplane features.
   const auto decoder_start = Clock::now();
   auto triplane_features =
       decode_triplane(image_tokens, diagnostic_directory.string());
-  m_queue.wait_and_throw();
   const auto decoder_end = Clock::now();
 
   // Detokenize and upsample the three feature planes.
   const auto post_process_start = Clock::now();
   auto upsampled_triplane =
       post_process_triplane(std::move(triplane_features));
-  m_queue.wait_and_throw();
   const auto post_process_end = Clock::now();
   /*export_image_features(
       upsampled_triplane,
@@ -133,9 +131,24 @@ void FunGTMesher::generate(const std::string &path_image,
   auto nerf_weights = load_nerf_weights();
   auto density_grid =
       m_nerf->compute_density(upsampled_triplane, nerf_weights, m_queue);
-  m_queue.wait_and_throw();
   const auto nerf_end = Clock::now();
-  export_density_grid(density_grid, path_output);
+
+  const flib::graphics::marching_cubes::Settings marching_cubes_settings{
+      30.0f,
+      {-0.87f, -0.87f, -0.87f},
+      {0.87f, 0.87f, 0.87f}};
+  const auto marching_cubes_start = Clock::now();
+  auto mesh = flib::graphics::marching_cubes::generate_mesh(
+      density_grid, marching_cubes_settings, m_queue);
+  const auto marching_cubes_end = Clock::now();
+
+  const auto color_start = Clock::now();
+  mesh.colors = m_nerf->compute_color(
+      upsampled_triplane, mesh.positions, nerf_weights, m_queue);
+  const auto color_end = Clock::now();
+
+  fgtm::ObjExporter exporter;
+  exporter.export_mesh(mesh, path_output, m_queue);
 
   const auto total_end = Clock::now();
   const auto milliseconds = [](Clock::time_point start, Clock::time_point end) {
@@ -153,6 +166,12 @@ void FunGTMesher::generate(const std::string &path_image,
   std::cout << "Triplane post-process: "
             << milliseconds(post_process_start, post_process_end) << " ms\n";
   std::cout << "NeRF density grid: " << milliseconds(nerf_start, nerf_end)
+            << " ms\n";
+  std::cout << "Marching cubes: "
+            << milliseconds(marching_cubes_start, marching_cubes_end)
+            << " ms (" << mesh.positions.getShape()[0] / 3
+            << " triangles)\n";
+  std::cout << "Vertex colors: " << milliseconds(color_start, color_end)
             << " ms\n";
   std::cout << "Total execution: " << milliseconds(total_start, total_end)
             << " ms\n";

@@ -103,6 +103,7 @@ if(OpenCL_FOUND)
 else()
     message(FATAL_ERROR "OpenCL library not found!")
 endif()
+find_package(assimp CONFIG REQUIRED)
 
 # ════════════════════════════════════════════════════════════════════════════
 # INCLUDE DIRECTORIES
@@ -133,6 +134,8 @@ set(SOURCE_FILES
     ${FGT_MESHER_BASE_DIR}/TriplaneDecoder/triplane_decoder.cpp
     ${FGT_MESHER_BASE_DIR}/WeightLoader/weight_loader.cpp
     ${FGT_MESHER_BASE_DIR}/Mesh/mesh.cpp
+    ${FGT_MESHER_BASE_DIR}/Mesh/obj_exporter.cpp
+    # ${FGT_MESHER_BASE_DIR}/Mesh/texture_creator.cpp
     ${FGT_MESHER_BASE_DIR}/Path_Manager/path_manager.cpp
     ${FGT_MESHER_BASE_DIR}/vendor/stb_image/stb_image.cpp
 )
@@ -146,7 +149,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     FGT_MESHER_BASE_DIR="${FGT_MESHER_BASE_DIR}"
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL GL dl)
+target_link_libraries(${PROJECT_NAME} PRIVATE funlib OpenCL::OpenCL GL dl assimp::assimp)
 target_compile_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
 target_link_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=${FUNGT_SYCL_TARGETS})
 

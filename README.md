@@ -20,10 +20,8 @@ model_path=${MODEL_PATH}
 Run the generator with an input image and output density file:
 
 ```bash
-./FunGTMesher image.png --out density.bin
+./FunGTMesher image.png --out image.obj
 ```
-
-currently only the density in binary form is allowed to export.
 
 ## Model weights
 
