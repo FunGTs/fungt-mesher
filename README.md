@@ -1,9 +1,8 @@
 # fungt-mesher
 
 FunGT Mesher is a C++ and SYCL application for generating 3D data from a
-single image. It implements the inference pipeline on the GPU using pretrained
-TripoSR model weights, encoding the input image, generating triplane features,
-and producing a density grid that can be converted into a 3D mesh.
+single image. It implements the inference pipeline on the GPU (NVIDIA and Intel) using pretrained TripoSR model weights, encoding the input image, generating triplane features,
+and producing a density grid that is converted into a 3D mesh using marching cubes.
 
 Set the model weights path in the environment:
 
